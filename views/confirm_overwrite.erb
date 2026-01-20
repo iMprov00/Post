@@ -1,0 +1,64 @@
+<% @page_title = 'Подтверждение перезаписи' %>
+
+<div class="app-header">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1><i class="bi bi-exclamation-triangle me-2"></i>Подтверждение перезаписи</h1>
+                <p>Проверьте данные перед продолжением</p>
+            </div>
+            <div>
+                <a href="/upload" class="btn btn-light">
+                    <i class="bi bi-arrow-left me-1"></i>Назад
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="app-card">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Внимание!</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning mb-4">
+                        <h6 class="alert-heading">Найдены существующие данные</h6>
+                        <p class="mb-2">
+                            На дату <strong><%= @date %></strong> в отделении 
+                            <strong><%= @department %></strong> уже имеется 
+                            <strong><%= @existing_count %></strong> записей пациентов.
+                        </p>
+                        <p class="mb-0">
+                            При загрузке нового файла все существующие данные за эту дату 
+                            будут удалены и заменены новыми.
+                        </p>
+                    </div>
+                    
+                    <form action="/upload" method="post" enctype="multipart/form-data">
+                        <input type="hidden" name="department" value="<%= @department %>">
+                        <input type="hidden" name="date" value="<%= @date %>">
+                        <input type="hidden" name="overwrite" value="true">
+                        
+                        <div class="mb-4">
+                            <label class="form-label">Выберите новый файл Excel</label>
+                            <input type="file" name="file" class="form-control" accept=".xlsx" required>
+                            <div class="form-text text-smaller mt-1">
+                                Выберите файл Excel для загрузки
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex gap-2">
+                            <a href="/upload" class="btn btn-secondary">Отмена</a>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="bi bi-arrow-clockwise me-1"></i>Продолжить и перезаписать
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
