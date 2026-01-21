@@ -389,3 +389,252 @@ body {
         margin-top: 1rem;
     }
 }
+
+/* Дополнительные стили для новых колонок */
+.foreigner-cell, .contract-cell {
+    text-align: center;
+    cursor: pointer;
+}
+
+.foreigner-cell:hover, .contract-cell:hover {
+    background-color: rgba(102, 126, 234, 0.07) !important;
+}
+
+.foreigner-cell .cell-content,
+.contract-cell .cell-content {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    min-height: 32px;
+}
+
+.foreigner-cell .bi-check-square,
+.contract-cell .bi-check-square {
+    color: #28a745;
+    font-size: 1.1rem;
+}
+
+.foreigner-cell .bi-square,
+.contract-cell .bi-square {
+    color: #6c757d;
+    font-size: 1.1rem;
+}
+
+/* Стили для спиннера загрузки */
+.spinner-border {
+    width: 1rem;
+    height: 1rem;
+    border-width: 0.15em;
+    margin: 0 auto;
+}
+
+/* Скроем текстовый контент для чекбоксов */
+.foreigner-cell .cell-content,
+.contract-cell .cell-content {
+    color: transparent !important;
+    font-size: 0 !important;
+    line-height: 0 !important;
+}
+
+.foreigner-cell .cell-content *,
+.contract-cell .cell-content * {
+    color: initial !important;
+    font-size: initial !important;
+    line-height: initial !important;
+}
+
+/* Стили для выпадающих списков */
+.autocomplete-input {
+    position: relative;
+    z-index: 100;
+}
+
+/* Стили для datalist */
+datalist {
+    position: absolute;
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+}
+
+datalist option {
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+
+datalist option:hover {
+    background-color: #f5f5f5;
+}
+
+/* Для пользовательского ввода */
+datalist option[data-custom="true"] {
+    color: #6c757d;
+    font-style: italic;
+}
+
+/* Улучшение видимости для полей с автодополнением */
+.editable.editing .autocomplete-input:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+/* Стили для группировки по палатам */
+.room-section {
+    margin-bottom: 2rem;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.room-section:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.room-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 0.75rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.room-header h5 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+}
+
+.room-header .badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+}
+
+.no-room-section .room-header {
+    background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+}
+
+/* Стили для таблицы внутри секции палаты */
+.room-section .table {
+    margin-bottom: 0;
+    font-size: 0.85rem;
+}
+
+.room-section .table th {
+    background-color: #f8f9fa;
+    border-top: 1px solid #dee2e6;
+    font-weight: 600;
+    padding: 0.5rem 0.3rem;
+    font-size: 0.8rem;
+}
+
+.room-section .table td {
+    padding: 0.3rem;
+}
+
+/* Контейнер для пациентов */
+#patientsContainer {
+    padding: 1rem;
+}
+
+/* Стили для фильтра по палатам */
+#roomFilter {
+    font-size: 0.85rem;
+    border-radius: 4px;
+    border: 1px solid #dee2e6;
+    transition: border-color 0.2s;
+    padding: 0.375rem 0.75rem;
+}
+
+#roomFilter:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+/* Анимация появления секций */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.room-section {
+    animation: slideIn 0.3s ease-out;
+}
+
+/* Стили для пустых палат */
+.room-section:empty {
+    display: none;
+}
+
+/* Адаптивность для группировки */
+@media (max-width: 768px) {
+    .room-section {
+        margin-bottom: 1rem;
+    }
+    
+    .room-header h5 {
+        font-size: 0.9rem;
+    }
+    
+    .room-section .table {
+        font-size: 0.8rem;
+    }
+}
+
+/* Добавьте в style.css */
+
+/* Заголовок палаты */
+.room-header {
+  background-color: #f8f9fa !important;
+  border-left: 4px solid #6f42c1;
+}
+
+.room-header td {
+  font-size: 0.9rem;
+}
+
+/* Разделитель между палатами */
+.room-divider td {
+  padding: 4px 0 !important;
+  background-color: #e9ecef;
+}
+
+/* Иконки для свертывания/развертывания */
+.room-collapsed .room-header {
+  background-color: #e9ecef !important;
+}
+
+.room-collapsed .room-header i.bi-chevron-up {
+  transform: rotate(180deg);
+  transition: transform 0.3s ease;
+}
+
+/* Подсветка текущей палаты в фильтре */
+select option:checked {
+  background-color: #6f42c1;
+  color: white;
+}
+
+/* Анимация переключения */
+.patient-row {
+  transition: all 0.3s ease;
+}
+
+.room-collapsed .patient-row {
+  display: none !important;
+}

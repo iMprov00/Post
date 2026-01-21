@@ -92,9 +92,6 @@ end
     
     # Определяем поля, которые НЕ нужно копировать
     fields_to_exclude = [
-      :child_location,          # Где ребёнок
-      :thermometry_u, :thermometry_o, :thermometry_v,  # Температура
-      :table_number,            # Стол
       :room_number,             # Палата (оставляем из Excel)
       :full_name,               # ФИО (оставляем из Excel)
       :birth_date,              # Дата рождения (оставляем из Excel)
@@ -108,7 +105,6 @@ end
     # Копируем все атрибуты из предыдущего пациента, кроме исключенных
     previous_patient.attributes.each do |key, value|
       next if fields_to_exclude.include?(key.to_sym)
-      next if value.nil? || value == ''  # Не копируем пустые значения
       
       # Убедимся, что поле существует в patient_data
       if patient_data.key?(key.to_sym)
@@ -122,146 +118,173 @@ end
     patient_data
   end
   
-def self.import_from_excel(file_path, department, date)
-  puts "=" * 50
-  puts "Начинаем импорт из файла: #{file_path}"
-  puts "Отделение: #{department}, Дата: #{date}"
-  puts "=" * 50
-  
-  begin
-    workbook = Roo::Excelx.new(file_path)
-    puts "Файл успешно открыт"
-    puts "Всего строк в файле: #{workbook.last_row}"
+  def self.import_from_excel(file_path, department, date)
+    puts "=" * 50
+    puts "Начинаем импорт из файла: #{file_path}"
+    puts "Отделение: #{department}, Дата: #{date}"
+    puts "=" * 50
     
-    patients_data = []
-    
-    # Начинаем с 5-й строки (A5, B5, C5, J5)
-    (5..workbook.last_row).each do |row|
-      room_number = workbook.cell(row, 1)
-      full_name = workbook.cell(row, 2)
-      birth_date = workbook.cell(row, 3)
-      birth_date_of_child = workbook.cell(row, 10)
+    begin
+      workbook = Roo::Excelx.new(file_path)
+      puts "Файл успешно открыт"
+      puts "Всего строк в файле: #{workbook.last_row}"
       
-      puts "\nСтрока #{row}:"
-      puts "  Палата: #{room_number.inspect}"
-      puts "  ФИО: #{full_name.inspect}"
-      puts "  Дата рождения: #{birth_date.inspect}"
-      puts "  Дата родов: #{birth_date_of_child.inspect}"
+      patients_data = []
       
-      # Пропускаем пустые строки
-      if room_number.nil? && full_name.nil? && birth_date.nil? && birth_date_of_child.nil?
-        puts "  -> Пропускаем (все поля пустые)"
-        next
-      end
-      
-      # Обработка дат
-      begin
-        parsed_birth_date = birth_date.is_a?(Date) ? birth_date : Date.parse(birth_date.to_s)
-      rescue => e
-        puts "  Ошибка парсинга даты рождения #{birth_date}: #{e.message}"
-        parsed_birth_date = nil
-      end
-      
-      begin
-        parsed_birth_date_of_child = birth_date_of_child.is_a?(Date) ? birth_date_of_child : Date.parse(birth_date_of_child.to_s)
-      rescue => e
-        puts "  Ошибка парсинга даты родов #{birth_date_of_child}: #{e.message}"
-        parsed_birth_date_of_child = nil
-      end
-      
-      # Базовые данные из Excel
-      patient_data = {
-        room_number: room_number.to_s.strip,
-        full_name: full_name.to_s.strip,
-        birth_date: parsed_birth_date,
-        birth_date_of_child: parsed_birth_date_of_child,
-        department: department,
-        registration_date: date,
-        created_at: Time.now,
-        updated_at: Time.now,
-        # Инициализируем все остальные поля как nil
-        child_location: nil,
-        thermometry_u: nil,
-        thermometry_o: nil,
-        thermometry_v: nil,
-        table_number: nil,
-        is_foreigner: nil,
-        notes: nil
-      }
-      
-      puts "  Ищем пациента на предыдущий день..."
-      # Ищем пациента на предыдущий день
-      previous_patient = find_previous_patient(patient_data, department, date)
-      
-      # Если нашли пациента на предыдущий день, копируем данные
-      if previous_patient
-        puts "  Копируем данные из предыдущего дня..."
-        patient_data = copy_data_from_previous_day(patient_data, previous_patient)
-      else
-        puts "  Данные из предыдущего дня не будут скопированы"
-      end
-      
-      puts "  -> Данные для сохранения: #{patient_data}"
-      
-      patients_data << patient_data
-    end
-    
-    puts "\nИтого найдено записей: #{patients_data.size}"
-    
-    if patients_data.empty?
-      puts "Нет данных для импорта!"
-      return
-    end
-    
-    # Удаляем старые записи за эту дату и отделение
-    puts "Удаляем старые записи..."
-    deleted_count = Patient.where(department: department, registration_date: date).delete_all
-    puts "Удалено записей: #{deleted_count}"
-    
-    # Массовая вставка
-    puts "Начинаем массовую вставку..."
-    if patients_data.any?
-      # Проверяем, что у всех объектов одинаковые ключи
-      first_keys = patients_data.first.keys
-      patients_data.each_with_index do |data, index|
-        unless data.keys == first_keys
-          puts "Ошибка: разные ключи у элемента #{index}:"
-          puts "Ожидаемые: #{first_keys}"
-          puts "Полученные: #{data.keys}"
-          raise "Разные ключи у элементов массива"
+      # Начинаем с 5-й строки (A5, B5, C5, J5)
+      (5..workbook.last_row).each do |row|
+        room_number = workbook.cell(row, 1)
+        full_name = workbook.cell(row, 2)
+        birth_date = workbook.cell(row, 3)
+        birth_date_of_child = workbook.cell(row, 10)
+        
+        puts "\nСтрока #{row}:"
+        puts "  Палата: #{room_number.inspect}"
+        puts "  ФИО: #{full_name.inspect}"
+        puts "  Дата рождения: #{birth_date.inspect}"
+        puts "  Дата родов: #{birth_date_of_child.inspect}"
+        
+        # Пропускаем пустые строки
+        if room_number.nil? && full_name.nil? && birth_date.nil? && birth_date_of_child.nil?
+          puts "  -> Пропускаем (все поля пустые)"
+          next
         end
+        
+        # Обработка дат
+        begin
+          parsed_birth_date = birth_date.is_a?(Date) ? birth_date : Date.parse(birth_date.to_s)
+        rescue => e
+          puts "  Ошибка парсинга даты рождения #{birth_date}: #{e.message}"
+          parsed_birth_date = nil
+        end
+        
+        begin
+          parsed_birth_date_of_child = birth_date_of_child.is_a?(Date) ? birth_date_of_child : Date.parse(birth_date_of_child.to_s)
+        rescue => e
+          puts "  Ошибка парсинга даты родов #{birth_date_of_child}: #{e.message}"
+          parsed_birth_date_of_child = nil
+        end
+        
+        # Базовые данные из Excel с значениями по умолчанию
+        patient_data = {
+          room_number: room_number.to_s.strip,
+          full_name: full_name.to_s.strip,
+          birth_date: parsed_birth_date,
+          birth_date_of_child: parsed_birth_date_of_child,
+          department: department,
+          registration_date: date,
+          created_at: Time.now,
+          updated_at: Time.now,
+          # Значения по умолчанию
+          child_location: "+",                    # По умолчанию "+"
+          thermometry_u: "36,6",                  # По умолчанию "36,6"
+          thermometry_o: "36,6",                  # По умолчанию "36,6"
+          thermometry_v: "36,6",                  # По умолчанию "36,6"
+          table_number: nil,
+          is_foreigner: "нет",                    # По умолчанию "нет"
+          contract: false,                        # По умолчанию false (галочка снята)
+          notes: nil
+        }
+        
+        puts "  Ищем пациента на предыдущий день..."
+        # Ищем пациента на предыдущий день
+        previous_patient = find_previous_patient(patient_data, department, date)
+        
+        # Если нашли пациента на предыдущий день, копируем данные
+        if previous_patient
+          puts "  Копируем данные из предыдущего дня..."
+          patient_data = copy_data_from_previous_day(patient_data, previous_patient)
+        else
+          puts "  Данные из предыдущего дня не будут скопированы"
+        end
+        
+        puts "  -> Данные для сохранения: #{patient_data}"
+        
+        patients_data << patient_data
       end
       
-      result = Patient.insert_all(patients_data)
-      puts "Добавлено записей: #{result.count}"
-    else
-      puts "Нет данных для вставки"
+      puts "\nИтого найдено записей: #{patients_data.size}"
+      
+      if patients_data.empty?
+        puts "Нет данных для импорта!"
+        return
+      end
+      
+      # Удаляем старые записи за эту дату и отделение
+      puts "Удаляем старые записи..."
+      deleted_count = Patient.where(department: department, registration_date: date).delete_all
+      puts "Удалено записей: #{deleted_count}"
+      
+      # Массовая вставка
+      puts "Начинаем массовую вставку..."
+      if patients_data.any?
+        # Проверяем, что у всех объектов одинаковые ключи
+        first_keys = patients_data.first.keys
+        patients_data.each_with_index do |data, index|
+          unless data.keys == first_keys
+            puts "Ошибка: разные ключи у элемента #{index}:"
+            puts "Ожидаемые: #{first_keys}"
+            puts "Полученные: #{data.keys}"
+            raise "Разные ключи у элементов массива"
+          end
+        end
+        
+        result = Patient.insert_all(patients_data)
+        puts "Добавлено записей: #{result.count}"
+      else
+        puts "Нет данных для вставки"
+      end
+      
+      puts "=" * 50
+      puts "Импорт завершен!"
+      puts "=" * 50
+      
+    rescue => e
+      puts "ОШИБКА при импорте: #{e.message}"
+      puts e.backtrace.join("\n")
+      raise e
     end
-    
-    puts "=" * 50
-    puts "Импорт завершен!"
-    puts "=" * 50
-    
-  rescue => e
-    puts "ОШИБКА при импорте: #{e.message}"
-    puts e.backtrace.join("\n")
-    raise e
   end
-end
 end
 
 # Главная страница
+# app.rb - обновите метод get '/'
+
 get '/' do
   @departments = [
     { short: 'АФО', full: 'Акушерское физиологическое отделение с совместным пребыванием матери и ребёнка' }
   ]
   @selected_date = params[:date] || Date.today.to_s
   @selected_department = params[:department] || 'АФО'
+  @selected_room = params[:room] || ''
   
   if params[:date] && params[:department]
-    @patients = Patient.by_date_and_department(params[:date], params[:department]).order(:id)
+    @patients = if @selected_room.present?
+      Patient.by_date_and_department(params[:date], params[:department])
+             .where(room_number: @selected_room)
+             .order(:room_number, :id)
+    else
+      Patient.by_date_and_department(params[:date], params[:department])
+             .order(:room_number, :id)
+    end
+    
+    # Получаем уникальные палаты для фильтра
+    @rooms = @patients.pluck(:room_number).uniq.compact.reject(&:empty?)
+    # Сортируем палаты
+    @rooms.sort_by! do |room|
+      if room =~ /^\d+$/
+        [0, room.to_i]
+      elsif room =~ /^\d+[а-яa-z]?$/i
+        num = room.to_i
+        suffix = room.gsub(/\d+/, '')
+        [1, num, suffix.downcase]
+      else
+        [2, room.downcase]
+      end
+    end
   else
     @patients = []
+    @rooms = []
   end
   
   erb :index
@@ -442,4 +465,48 @@ get '/export_excel' do
   
   # Возвращаем содержимое файла
   package.to_stream.read
+end
+
+
+# app.rb - добавить после класса Patient или перед главной страницей
+
+# API для получения уникальных палат за дату и отделение
+get '/api/rooms' do
+  content_type :json
+  
+  patients = Patient.where(
+    department: params[:department],
+    registration_date: params[:date]
+  )
+  
+  # Получаем уникальные номера палат, отсортированные естественным образом
+  rooms = patients.pluck(:room_number).uniq.compact.reject(&:empty?)
+  
+  # Сортируем палаты: сначала цифры, потом текст
+  sorted_rooms = rooms.sort_by do |room|
+    if room =~ /^\d+$/
+      [0, room.to_i] # Числа в начале
+    elsif room =~ /^\d+[а-яa-z]?$/i
+      num = room.to_i
+      suffix = room.gsub(/\d+/, '')
+      [1, num, suffix.downcase] # Числа с буквами
+    else
+      [2, room.downcase] # Текст в конце
+    end
+  end
+  
+  { rooms: sorted_rooms }.to_json
+end
+
+# API для получения пациентов по палате
+get '/api/patients/by_room/:room' do
+  content_type :json
+  
+  patients = Patient.where(
+    department: params[:department],
+    registration_date: params[:date],
+    room_number: params[:room]
+  ).order(:id)
+  
+  patients.to_json
 end
