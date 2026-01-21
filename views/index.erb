@@ -77,79 +77,85 @@
     </div>
 
     <!-- index.erb - замените блок таблицы -->
-    <div class="patient-table">
-      <div class="table-header">
-        <h4>Пациенты</h4>
-        <button class="btn btn-success" onclick="addPatient()">
-          <i class="bi bi-plus-circle me-1"></i>Добавить пациента
-        </button>
+<!-- index.erb - замените блок таблицы на этот код -->
+<div class="patient-table">
+  <div class="table-header">
+    <h4>Пациенты</h4>
+    <div>
+      <button class="btn btn-outline-secondary me-2" onclick="toggleAllRooms()">
+        <i class="bi bi-chevron-double-up"></i> Свернуть все
+      </button>
+      <button class="btn btn-success" onclick="addPatient()">
+        <i class="bi bi-plus-circle me-1"></i>Добавить пациента
+      </button>
+    </div>
+  </div>
+  
+  <div class="p-3 border-bottom">
+    <div class="search-box">
+      <input type="text" id="searchInput" class="form-control" placeholder="Поиск по ФИО, палате, датам...">
+      <div class="form-text mt-1 text-smaller">
+        Поиск осуществляется по всем полям таблицы в реальном времени
       </div>
-      
-      <div class="p-3 border-bottom">
-        <div class="search-box">
-          <input type="text" id="searchInput" class="form-control" placeholder="Поиск по ФИО, палате, датам...">
-          <div class="form-text mt-1 text-smaller">
-            Поиск осуществляется по всем полям таблицы в реальном времени
-          </div>
+    </div>
+  </div>
+  
+  <div class="table-container" id="patientsContainer">
+    <% if @patients.empty? %>
+      <div class="text-center py-4">
+        <div class="text-muted">
+          <i class="bi bi-inbox fs-1"></i>
+          <p class="mt-2">Нет данных для отображения</p>
+          <p class="small">Загрузите данные из Excel или добавьте пациента вручную</p>
         </div>
       </div>
-      
-      <div class="table-container">
-        <table class="table table-hover mb-0">
-          <thead>
-            <tr>
-              <th width="60">Палата</th>
-              <th>ФИО пациента</th>
-              <th width="100">Дата рождения</th>
-              <th width="100">Дата родов</th>
-              <th width="100">Где ребёнок</th>
-              <th width="40" class="text-center">У</th>
-              <th width="40" class="text-center">О</th>
-              <th width="40" class="text-center">В</th>
-              <th width="60">Стол</th>
-              <th width="80" class="foreigner-cell">Иногородний</th>
-              <th width="80" class="contract-cell">Контракт</th>
-              <th width="150">Примечания</th>
-              <th width="70" class="text-center">Действия</th>
-            </tr>
-          </thead>
-          <tbody id="patientsTable">
-            <% if @patients.empty? %>
-              <tr>
-                <td colspan="12" class="text-center py-4">
-                  <div class="text-muted">
-                    <i class="bi bi-inbox fs-1"></i>
-                    <p class="mt-2">Нет данных для отображения</p>
-                    <p class="small">Загрузите данные из Excel или добавьте пациента вручную</p>
-                  </div>
-                </td>
-              </tr>
-            <% else %>
-              <% last_room = nil %>
-              <% @patients.group_by(&:room_number).each do |room_number, room_patients| %>
-                <!-- Заголовок палаты -->
-                <tr class="room-header bg-light">
-                  <td colspan="13" class="py-2">
-                    <div class="d-flex justify-content-between align-items-center">
-                      <div>
-                        <i class="bi bi-door-closed me-2"></i>
-                        <strong>Палата <%= room_number.presence || 'Не указана' %></strong>
-                        <span class="text-muted ms-3"><%= room_patients.count %> пациент(ов)</span>
-                      </div>
-                      <div>
-                        <button class="btn btn-sm btn-outline-secondary" onclick="toggleRoom(this, '<%= room_number %>')">
-                          <i class="bi bi-chevron-up"></i> Свернуть
-                        </button>
-                      </div>
-                    </div>
-                  </td>
+    <% else %>
+      <% @patients.group_by(&:room_number).each do |room_number, room_patients| %>
+        <div class="room-section <%= 'no-room-section' if room_number.blank? %>" 
+             data-room="<%= room_number %>"
+             id="room-<%= room_number.to_s.parameterize %>">
+          
+          <!-- Заголовок палаты -->
+          <div class="room-header">
+            <div class="d-flex justify-content-between align-items-center">
+              <div class="room-title">
+                <i class="bi bi-door-closed me-2"></i>
+                <strong>Палата <%= room_number.presence || 'Без палаты' %></strong>
+                <span class="patient-count ms-3"><%= room_patients.count %> пациент(ов)</span>
+              </div>
+              <div class="room-actions">
+                <button class="btn btn-sm room-toggle" onclick="toggleRoom(this, '<%= room_number %>')">
+                  <i class="bi bi-chevron-up"></i> Свернуть
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Таблица пациентов в палате -->
+          <div class="room-patients">
+            <table class="table table-hover mb-0">
+              <thead>
+                <tr>
+                  <th width="60">Палата</th>
+                  <th>ФИО пациента</th>
+                  <th width="100">Дата рождения</th>
+                  <th width="100">Дата родов</th>
+                  <th width="100">Где ребёнок</th>
+                  <th width="40" class="text-center">У</th>
+                  <th width="40" class="text-center">О</th>
+                  <th width="40" class="text-center">В</th>
+                  <th width="60">Стол</th>
+                  <th width="80" class="foreigner-cell">Иногородний</th>
+                  <th width="80" class="contract-cell">Контракт</th>
+                  <th width="150">Примечания</th>
+                  <th width="70" class="text-center">Действия</th>
                 </tr>
-                
-                <!-- Пациенты в палате -->
+              </thead>
+              <tbody>
                 <% room_patients.each do |patient| %>
                   <tr id="patient-<%= patient.id %>" 
                       data-patient-id="<%= patient.id %>" 
-                      class="patient-row room-<%= room_number.to_s.parameterize %>"
+                      class="patient-row"
                       data-room="<%= patient.room_number %>">
                     <td class="editable" data-field="room_number">
                       <span class="cell-content">
@@ -227,22 +233,20 @@
                     </td>
                   </tr>
                 <% end %>
-                
-                <!-- Разделитель между палатами -->
-                <tr class="room-divider">
-                  <td colspan="13" class="border-top"></td>
-                </tr>
-              <% end %>
-            <% end %>
-          </tbody>
-        </table>
-        <div id="noResults" class="no-results" style="display: none;">
-          <i class="bi bi-search fs-3"></i>
-          <p class="mt-2">Ничего не найдено</p>
-          <p class="small">Попробуйте изменить поисковый запрос или выбрать другую палату</p>
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
-    </div>
+      <% end %>
+    <% end %>
+  </div>
+  
+  <div id="noResults" class="no-results" style="display: none;">
+    <i class="bi bi-search fs-3"></i>
+    <p class="mt-2">Ничего не найдено</p>
+    <p class="small">Попробуйте изменить поисковый запрос или выбрать другую палату</p>
+  </div>
+</div>
 </div>
 
 <!-- Модальное окно для добавления пациента -->

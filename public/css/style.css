@@ -638,3 +638,168 @@ select option:checked {
 .room-collapsed .patient-row {
   display: none !important;
 }
+
+/* style.css - добавьте эти стили */
+
+/* Секция палаты */
+.room-section {
+  margin-bottom: 1.5rem;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.room-section:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Заголовок палаты */
+.room-header {
+  background: linear-gradient(135deg, #6f42c1 0%, #8a63d2 100%);
+  color: white;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.room-header .room-title {
+  display: flex;
+  align-items: center;
+  font-size: 1rem;
+}
+
+.room-header .room-title i {
+  font-size: 1.2rem;
+}
+
+.room-header .patient-count {
+  font-size: 0.85rem;
+  opacity: 0.9;
+  font-weight: normal;
+}
+
+/* Кнопка свернуть/развернуть */
+.room-toggle {
+  background-color: rgba(255, 255, 255, 0.2) !important;
+  color: white !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  padding: 0.25rem 0.75rem !important;
+  font-size: 0.85rem !important;
+  transition: all 0.3s ease !important;
+}
+
+.room-toggle:hover {
+  background-color: rgba(255, 255, 255, 0.3) !important;
+  border-color: rgba(255, 255, 255, 0.5) !important;
+  transform: translateY(-1px);
+}
+
+/* Свернутая палата */
+.room-collapsed {
+  border-color: #adb5bd;
+}
+
+.room-collapsed .room-header {
+  background: linear-gradient(135deg, #8a63d2 0%, #6f42c1 100%);
+}
+
+.room-collapsed .room-patients {
+  display: none;
+}
+
+/* Пациенты в палате */
+.room-patients {
+  background: white;
+}
+
+.room-patients .table {
+  margin-bottom: 0;
+  font-size: 0.85rem;
+}
+
+.room-patients .table th {
+  background-color: #f8f9fa;
+  border-top: 1px solid #dee2e6;
+  font-weight: 600;
+  padding: 0.5rem 0.3rem;
+  font-size: 0.8rem;
+}
+
+.room-patients .table td {
+  padding: 0.3rem;
+}
+
+/* Для палаты без номера */
+.no-room-section .room-header {
+  background: linear-gradient(135deg, #6c757d 0%, #868e96 100%);
+}
+
+.no-room-section .room-toggle {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* Анимация переключения */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 1000px;
+  }
+}
+
+.room-patients {
+  animation: slideDown 0.3s ease-out;
+}
+
+/* Для пустых палат */
+.room-section:empty {
+  display: none;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .room-header .room-title {
+    font-size: 0.9rem;
+  }
+  
+  .room-header .patient-count {
+    display: block;
+    margin-left: 0;
+    margin-top: 0.25rem;
+  }
+  
+  .room-toggle {
+    font-size: 0.8rem !important;
+    padding: 0.2rem 0.5rem !important;
+  }
+}
+
+/* Обновите контейнер таблицы */
+.table-container {
+  max-height: 600px;
+  overflow-y: auto;
+  border-radius: 0 0 8px 8px;
+  padding: 0.5rem;
+}
+
+.table-container::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.table-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}

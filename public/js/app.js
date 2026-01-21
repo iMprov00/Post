@@ -16,74 +16,97 @@ function getOptionsForField(field) {
     }
 }
 
+// Создание уникального ID для datalist
+function generateDatalistId(patientId, field) {
+    return `datalist-${patientId}-${field}`;
+}
 
 // Переключение видимости палаты
 function toggleRoom(button, roomNumber) {
-  const roomPatients = document.querySelectorAll(`.room-${roomNumber.replace(/\s+/g, '-').toLowerCase()}`);
-  const roomHeader = button.closest('.room-header');
-  const roomDivider = roomHeader.nextElementSibling?.classList.contains('room-divider') ? 
-                     roomHeader.nextElementSibling : null;
+  const roomSection = document.getElementById(`room-${roomNumber.replace(/\s+/g, '-').toLowerCase()}`);
+  if (!roomSection) return;
   
-  roomPatients.forEach(row => {
-    if (row.style.display === 'none') {
-      row.style.display = '';
-      button.innerHTML = '<i class="bi bi-chevron-up"></i> Свернуть';
-      button.classList.remove('btn-secondary');
-      button.classList.add('btn-outline-secondary');
-      roomHeader.classList.remove('room-collapsed');
-      
-      // Показываем разделитель если есть
-      if (roomDivider) roomDivider.style.display = '';
-    } else {
-      row.style.display = 'none';
-      button.innerHTML = '<i class="bi bi-chevron-down"></i> Развернуть';
-      button.classList.remove('btn-outline-secondary');
-      button.classList.add('btn-secondary');
-      roomHeader.classList.add('room-collapsed');
-      
-      // Скрываем разделитель
-      if (roomDivider) roomDivider.style.display = 'none';
-    }
-  });
+  const roomPatients = roomSection.querySelector('.room-patients');
+  const icon = button.querySelector('i');
+  
+  if (roomPatients.style.display === 'none') {
+    roomPatients.style.display = '';
+    icon.className = 'bi bi-chevron-up';
+    button.innerHTML = '<i class="bi bi-chevron-up"></i> Свернуть';
+    roomSection.classList.remove('room-collapsed');
+  } else {
+    roomPatients.style.display = 'none';
+    icon.className = 'bi bi-chevron-down';
+    button.innerHTML = '<i class="bi bi-chevron-down"></i> Развернуть';
+    roomSection.classList.add('room-collapsed');
+  }
+  
+  // Сохраняем состояние в localStorage
+  saveRoomState(roomNumber, roomPatients.style.display === 'none');
 }
 
-// Фильтрация по палатам в реальном времени (опционально)
+// Свернуть/развернуть все палаты
+function toggleAllRooms() {
+  const roomSections = document.querySelectorAll('.room-section');
+  const toggleAllBtn = document.querySelector('button[onclick="toggleAllRooms()"]');
+  const icon = toggleAllBtn.querySelector('i');
+  
+  // Проверяем текущее состояние (если хотя бы одна палата развернута, сворачиваем все)
+  const hasExpanded = Array.from(roomSections).some(section => 
+    !section.classList.contains('room-collapsed')
+  );
+  
+  roomSections.forEach(section => {
+    const roomNumber = section.getAttribute('data-room');
+    const roomPatients = section.querySelector('.room-patients');
+    const button = section.querySelector('.room-toggle');
+    
+    if (hasExpanded) {
+      // Сворачиваем все
+      roomPatients.style.display = 'none';
+      section.classList.add('room-collapsed');
+      if (button) {
+        button.innerHTML = '<i class="bi bi-chevron-down"></i> Развернуть';
+      }
+      saveRoomState(roomNumber, true);
+    } else {
+      // Разворачиваем все
+      roomPatients.style.display = '';
+      section.classList.remove('room-collapsed');
+      if (button) {
+        button.innerHTML = '<i class="bi bi-chevron-up"></i> Свернуть';
+      }
+      saveRoomState(roomNumber, false);
+    }
+  });
+  
+  // Обновляем иконку и текст кнопки
+  if (hasExpanded) {
+    icon.className = 'bi bi-chevron-double-down';
+    toggleAllBtn.innerHTML = '<i class="bi bi-chevron-double-down"></i> Развернуть все';
+  } else {
+    icon.className = 'bi bi-chevron-double-up';
+    toggleAllBtn.innerHTML = '<i class="bi bi-chevron-double-up"></i> Свернуть все';
+  }
+}
+
+// Фильтрация по палатам
 function setupRoomFilter() {
   const roomFilter = document.getElementById('roomFilter');
   if (!roomFilter) return;
   
   roomFilter.addEventListener('change', function() {
     const selectedRoom = this.value;
-    const allPatients = document.querySelectorAll('.patient-row');
-    const roomHeaders = document.querySelectorAll('.room-header');
-    const roomDividers = document.querySelectorAll('.room-divider');
+    const roomSections = document.querySelectorAll('.room-section');
     
-    if (!selectedRoom) {
-      // Показать все палаты
-      allPatients.forEach(row => row.style.display = '');
-      roomHeaders.forEach(header => header.style.display = '');
-      roomDividers.forEach(divider => divider.style.display = '');
-      return;
-    }
-    
-    // Скрыть все, затем показать только выбранную палату
-    allPatients.forEach(row => {
-      const rowRoom = row.getAttribute('data-room');
-      if (rowRoom === selectedRoom) {
-        row.style.display = '';
+    roomSections.forEach(section => {
+      const roomNumber = section.getAttribute('data-room');
+      
+      if (!selectedRoom || roomNumber === selectedRoom || 
+          (selectedRoom === '' && roomNumber === '')) {
+        section.style.display = '';
       } else {
-        row.style.display = 'none';
-      }
-    });
-    
-    // Показать/скрыть заголовки палат
-    roomHeaders.forEach(header => {
-      const headerText = header.textContent;
-      if (headerText.includes(`Палата ${selectedRoom}`) || 
-          (selectedRoom === '' && headerText.includes('Не указана'))) {
-        header.style.display = '';
-      } else {
-        header.style.display = 'none';
+        section.style.display = 'none';
       }
     });
     
@@ -94,26 +117,15 @@ function setupRoomFilter() {
 
 // Обновление статистики
 function updateStats() {
-  const visiblePatients = document.querySelectorAll('.patient-row[style*=""]').length;
+  const visiblePatients = document.querySelectorAll('.patient-row').length;
   const totalPatients = document.querySelectorAll('.patient-row').length;
   const statsNumber = document.querySelector('.stats-number');
   
   if (statsNumber) {
     statsNumber.textContent = visiblePatients;
-    
-    // Показывать общее количество в скобках если не все видны
     const statsText = document.querySelector('.text-muted');
-    if (visiblePatients !== totalPatients) {
-      statsText.textContent = `пациентов (${visiblePatients} из ${totalPatients})`;
-    } else {
-      statsText.textContent = 'пациентов';
-    }
+    statsText.textContent = 'пациентов';
   }
-}
-
-// Создание уникального ID для datalist
-function generateDatalistId(patientId, field) {
-    return `datalist-${patientId}-${field}`;
 }
 
 // Обновить поиск для работы с группировкой
@@ -150,7 +162,7 @@ function setupSearch() {
       }
     });
     
-    // Показать/скрыть заголовки пустых палат
+    // Показать/скрыть палаты без пациентов
     updateRoomHeadersVisibility();
     
     // Обновить статистику
@@ -158,52 +170,41 @@ function setupSearch() {
     
     // Показываем/скрываем сообщение "Ничего не найдено"
     const noResults = document.getElementById('noResults');
-    const originalNoData = rows.length === 0;
+    const hasVisiblePatients = visibleCount > 0;
     
-    if (visibleCount === 0 && !originalNoData && searchTerm !== '') {
-      if (noResults) noResults.style.display = 'block';
+    if (!hasVisiblePatients && searchTerm !== '') {
+      noResults.style.display = 'block';
     } else {
-      if (noResults) noResults.style.display = 'none';
+      noResults.style.display = 'none';
     }
   });
 }
 
-// Показать/скрыть заголовки пустых палат
+// Показать/скрыть палаты без пациентов
 function updateRoomHeadersVisibility() {
-  const roomHeaders = document.querySelectorAll('.room-header');
+  const roomSections = document.querySelectorAll('.room-section');
   
-  roomHeaders.forEach(header => {
-    const roomName = header.textContent.match(/Палата (.+?)\s/)?.[1] || '';
-    const roomPatients = document.querySelectorAll(`.room-${roomName.replace(/\s+/g, '-').toLowerCase()}`);
+  roomSections.forEach(section => {
+    const roomPatients = section.querySelectorAll('.patient-row');
     const visiblePatients = Array.from(roomPatients).filter(row => 
       row.style.display !== 'none'
     ).length;
     
     if (visiblePatients === 0) {
-      header.style.display = 'none';
-      // Скрыть разделитель если есть
-      const nextDivider = header.nextElementSibling;
-      if (nextDivider && nextDivider.classList.contains('room-divider')) {
-        nextDivider.style.display = 'none';
-      }
+      section.style.display = 'none';
     } else {
-      header.style.display = '';
-      // Показать разделитель если есть
-      const nextDivider = header.nextElementSibling;
-      if (nextDivider && nextDivider.classList.contains('room-divider')) {
-        nextDivider.style.display = '';
-      }
+      section.style.display = '';
     }
   });
 }
 
 // Редактирование ячеек таблицы
 function setupTableEditing() {
-    const patientsTable = document.getElementById('patientsTable');
-    if (!patientsTable) return;
+    const patientsContainer = document.getElementById('patientsContainer');
+    if (!patientsContainer) return;
     
     // Обработчик клика для редактирования
-    patientsTable.addEventListener('click', function(e) {
+    patientsContainer.addEventListener('click', function(e) {
         const cell = e.target.closest('.editable');
         if (!cell || cell.classList.contains('editing')) return;
         
@@ -472,7 +473,6 @@ function saveCell(cell, value) {
     .then(data => {
         if (data.success) {
             updateCellContent(cell, data.patient[field], field);
-            updateSearchIndex(cell, data.patient[field]);
             
             // Показываем уведомление об успехе
             showNotification('Данные сохранены успешно!', 'success');
@@ -530,17 +530,6 @@ function updateCellContent(cell, value, field) {
     
     cell.innerHTML = `<span class="cell-content" data-search-text="${searchText}">${displayValue}</span>`;
     cell.classList.remove('editing');
-}
-
-function updateSearchIndex(cell, value) {
-    const cellContent = cell.querySelector('.cell-content');
-    if (cellContent) {
-        // Для полей, которые не являются чекбоксами
-        if (!cell.dataset.field || (cell.dataset.field !== 'is_foreigner' && cell.dataset.field !== 'contract')) {
-            cellContent.textContent = value || '—';
-            cellContent.dataset.searchText = value || '—';
-        }
-    }
 }
 
 function cancelEditing(cell) {
@@ -663,10 +652,22 @@ function deletePatient(id, name) {
         .then(data => {
             if (data.success) {
                 showNotification('Пациент успешно удален!', 'success');
-                document.getElementById(`patient-${id}`).remove();
+                const patientRow = document.getElementById(`patient-${id}`);
+                if (patientRow) {
+                    patientRow.remove();
+                    
+                    // Проверяем, остались ли пациенты в палате
+                    const roomSection = patientRow.closest('.room-section');
+                    if (roomSection) {
+                        const remainingPatients = roomSection.querySelectorAll('.patient-row');
+                        if (remainingPatients.length === 0) {
+                            roomSection.remove();
+                        }
+                    }
+                }
                 
-                // Если таблица пустая, показываем сообщение
-                if (document.querySelectorAll('#patientsTable tr.patient-row').length === 0) {
+                // Если все пациенты удалены, показываем сообщение
+                if (document.querySelectorAll('.patient-row').length === 0) {
                     setTimeout(() => location.reload(), 1000);
                 }
             } else {
@@ -753,6 +754,34 @@ function setupExport() {
     }
 }
 
+// Сохранение состояния свернутых палат
+function saveRoomState(roomNumber, isCollapsed) {
+  const roomStates = JSON.parse(localStorage.getItem('roomStates') || '{}');
+  roomStates[roomNumber] = isCollapsed;
+  localStorage.setItem('roomStates', JSON.stringify(roomStates));
+}
+
+// Восстановление состояния свернутых палат
+function restoreRoomStates() {
+  const roomStates = JSON.parse(localStorage.getItem('roomStates') || '{}');
+  
+  Object.keys(roomStates).forEach(roomNumber => {
+    if (roomStates[roomNumber]) {
+      const section = document.getElementById(`room-${roomNumber.replace(/\s+/g, '-').toLowerCase()}`);
+      if (section) {
+        const roomPatients = section.querySelector('.room-patients');
+        const button = section.querySelector('.room-toggle');
+        
+        if (roomPatients && button) {
+          roomPatients.style.display = 'none';
+          section.classList.add('room-collapsed');
+          button.innerHTML = '<i class="bi bi-chevron-down"></i> Развернуть';
+        }
+      }
+    }
+  });
+}
+
 // Инициализация при загрузке страницы
 document.addEventListener('DOMContentLoaded', function() {
   // Инициализация поиска
@@ -781,25 +810,3 @@ document.addEventListener('DOMContentLoaded', function() {
   // Восстанавливаем состояние свернутых палат из localStorage
   restoreRoomStates();
 });
-
-// Сохранение состояния свернутых палат
-function saveRoomState(roomNumber, isCollapsed) {
-  const roomStates = JSON.parse(localStorage.getItem('roomStates') || '{}');
-  roomStates[roomNumber] = isCollapsed;
-  localStorage.setItem('roomStates', JSON.stringify(roomStates));
-}
-
-// Восстановление состояния свернутых палат
-function restoreRoomStates() {
-  const roomStates = JSON.parse(localStorage.getItem('roomStates') || '{}');
-  
-  Object.keys(roomStates).forEach(roomNumber => {
-    if (roomStates[roomNumber]) {
-      const button = document.querySelector(`button[onclick*="${roomNumber}"]`);
-      if (button) {
-        setTimeout(() => toggleRoom(button, roomNumber), 100);
-      }
-    }
-  });
-}
-
